@@ -20,6 +20,12 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
+      - name: Build nightcore-spigot dependency
+        run: |
+          git clone --depth 1 --branch v2.10.0 https://github.com/nulli0n/nightcore-spigot.git /tmp/nightcore-spigot
+          cd /tmp/nightcore-spigot
+          mvn -B install -DskipTests --no-transfer-progress
+
       - name: Build with Maven
         run: mvn -B package --no-transfer-progress
 
