@@ -57,7 +57,7 @@ public class HologramManager extends AbstractManager<CratesPlugin> {
         if (Plugins.isInstalled(HookId.PACKET_EVENTS)) {
             try {
                 this.handler = new HologramPacketsHandler();
-            } catch (LinkageError | Exception e) {
+            } catch (LinkageError | RuntimeException e) {
                 this.plugin.warn("PacketEvents is installed but incompatible (is it up to date?): " + e.getMessage());
             }
         }
@@ -65,7 +65,7 @@ public class HologramManager extends AbstractManager<CratesPlugin> {
         if (this.handler == null && Plugins.isInstalled(HookId.PROTOCOL_LIB)) {
             try {
                 this.handler = new HologramProtocolHandler();
-            } catch (LinkageError | Exception e) {
+            } catch (LinkageError | RuntimeException e) {
                 this.plugin.warn("ProtocolLib is installed but incompatible (is it up to date?): " + e.getMessage());
             }
         }
