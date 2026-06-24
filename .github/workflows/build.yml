@@ -273,10 +273,10 @@ jobs:
           fi
           NC_JARS=$(find ~/.m2/repository/su/nightexpress/nightcore/ -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | tr '\n' ':')
           ANNOTATIONS=$(find ~/.m2/repository/org/jetbrains/annotations/ -name "*.jar" ! -name "*sources*" 2>/dev/null | head -1)
-          STUB_CP="${API_JAR}:${NC_JARS}${ANNOTATIONS}"
+          STUB_CP="${API_JAR}:${NC_JARS}:${ANNOTATIONS}"
 
           find /tmp/stubs/src -name "*.java" > /tmp/stubs/sources.txt
-          javac -source 21 -target 21 -cp "$STUB_CP" -d /tmp/stubs/classes @/tmp/stubs/sources.txt
+          javac --release 21 -cp "$STUB_CP" -d /tmp/stubs/classes @/tmp/stubs/sources.txt
 
           # Step 4: Package into one JAR and install under each artifact coordinate
           jar cf /tmp/stubs/all-stubs.jar -C /tmp/stubs/classes .
