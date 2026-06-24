@@ -62,9 +62,9 @@
         </dependency>
 
         <dependency>
-            <groupId>su.nightexpress.nightcore</groupId>
+            <groupId>com.github.nulli0n.nightcore-spigot</groupId>
             <artifactId>main</artifactId>
-            <version>2.10.0</version>
+            <version>v2.10.0</version>
             <scope>provided</scope>
         </dependency>
 
