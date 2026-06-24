@@ -55,12 +55,22 @@ public class HologramManager extends AbstractManager<CratesPlugin> {
 
     private boolean detectHandler() {
         if (Plugins.isInstalled(HookId.PACKET_EVENTS)) {
-            this.handler = new HologramPacketsHandler();
+            try {
+                this.handler = new HologramPacketsHandler();
+            } catch (LinkageError | RuntimeException e) {
+                this.plugin.warn("PacketEvents is installed but incompatible (is it up to date?): " + e.getMessage());
+            }
         }
-        else if (Plugins.isInstalled(HookId.PROTOCOL_LIB)) {
-            this.handler = new HologramProtocolHandler();
+
+        if (this.handler == null && Plugins.isInstalled(HookId.PROTOCOL_LIB)) {
+            try {
+                this.handler = new HologramProtocolHandler();
+            } catch (LinkageError | RuntimeException e) {
+                this.plugin.warn("ProtocolLib is installed but incompatible (is it up to date?): " + e.getMessage());
+            }
         }
-        else {
+
+        if (!this.hasHandler()) {
             this.plugin.warn("*".repeat(25));
             this.plugin.warn("You have no packet library plugins installed for the Holograms feature to work.");
             this.plugin.warn("Please install one of the following plugins to enable crate holograms: " + HookId.PACKET_EVENTS + " or " + HookId.PROTOCOL_LIB);
