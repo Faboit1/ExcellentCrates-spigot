@@ -24,7 +24,279 @@ jobs:
         run: |
           git clone --depth 1 --branch v2.10.0 https://github.com/nulli0n/nightcore-spigot.git /tmp/nightcore-spigot
           cd /tmp/nightcore-spigot
-          mvn -B install -DskipTests --no-transfer-progress
+
+          # Step 1: Build sub-modules (utils, bridge, spigot, paper) — these have no unresolvable deps
+          mvn -B install -pl utils,bridge,spigot,paper -am -DskipTests --no-transfer-progress
+
+          # Step 2: Generate stub Java source files for the 9 provided deps that aren't in any public repo
+          python3 - << 'PYEOF'
+          import os
+
+          src = "/tmp/stubs/src"
+
+          files = {
+            "su/nightexpress/nightcore/util/bukkit/NightItem.java": """
+          package su.nightexpress.nightcore.util.bukkit;
+          import org.bukkit.Material;
+          import org.bukkit.inventory.ItemStack;
+          public class NightItem {
+              public NightItem() {}
+              public static NightItem fromType(Material m) { return new NightItem(); }
+              public ItemStack getItemStack() { return null; }
+          }""",
+
+            "me/mraxetv/beasttokens/api/BeastTokensAPI.java": """
+          package me.mraxetv.beasttokens.api;
+          import org.bukkit.OfflinePlayer; import org.bukkit.entity.Player;
+          public class BeastTokensAPI {
+              private static final Mgr mgr = new Mgr();
+              public static Mgr getTokensManager() { return mgr; }
+              public static class Mgr {
+                  public double getTokens(Player p) { return 0; }
+                  public double getTokens(OfflinePlayer p) { return 0; }
+                  public void addTokens(Player p, double a) {}
+                  public void addTokens(OfflinePlayer p, double a) {}
+                  public void removeTokens(Player p, double a) {}
+                  public void removeTokens(OfflinePlayer p, double a) {}
+              }
+          }""",
+
+            "su/nightexpress/coinsengine/Placeholders.java": """
+          package su.nightexpress.coinsengine;
+          public class Placeholders { public static final String GENERIC_AMOUNT = "%amount%"; }""",
+
+            "su/nightexpress/coinsengine/api/currency/Currency.java": """
+          package su.nightexpress.coinsengine.api.currency;
+          import su.nightexpress.nightcore.util.bukkit.NightItem;
+          import java.util.function.UnaryOperator;
+          public interface Currency {
+              boolean isVaultEconomy(); String getId();
+              UnaryOperator<String> replacePlaceholders(); boolean isDecimal();
+              double floorIfNeeded(double amount); String formatValue(double amount);
+              String getName(); String getFormat(); NightItem icon();
+          }""",
+
+            "su/nightexpress/coinsengine/api/CoinsEngineAPI.java": """
+          package su.nightexpress.coinsengine.api;
+          import su.nightexpress.coinsengine.api.currency.Currency;
+          import org.bukkit.entity.Player;
+          import java.util.*; public class CoinsEngineAPI {
+              public static Mgr getCurrencyManager() { return new Mgr(); }
+              public static Currency getCurrency(String id) { return null; }
+              public static double getBalance(Player p, Currency c) { return 0; }
+              public static double getBalance(UUID uid, String id) { return 0; }
+              public static void addBalance(Player p, Currency c, double a) {}
+              public static void addBalance(UUID uid, String id, double a) {}
+              public static void removeBalance(Player p, Currency c, double a) {}
+              public static void removeBalance(UUID uid, String id, double a) {}
+              public static class Mgr { public Collection<Currency> getCurrencies() { return Collections.emptyList(); } }
+          }""",
+
+            "com/magmaguy/elitemobs/economy/EconomyHandler.java": """
+          package com.magmaguy.elitemobs.economy;
+          import java.util.UUID;
+          public class EconomyHandler {
+              public static double checkCurrency(UUID uid, boolean b) { return 0; }
+              public static void addCurrency(UUID uid, double amount) {}
+              public static void subtractCurrency(UUID uid, double amount) {}
+          }""",
+
+            "com/bencodez/votingplugin/VotingPluginHooks.java": """
+          package com.bencodez.votingplugin;
+          import org.bukkit.entity.Player; import java.util.UUID;
+          public class VotingPluginHooks {
+              private static final VotingPluginHooks I = new VotingPluginHooks();
+              public static VotingPluginHooks getInstance() { return I; }
+              public UM getUserManager() { return new UM(); }
+              public static class UM {
+                  public U getVotingPluginUser(Player p) { return new U(); }
+                  public U getVotingPluginUser(UUID uid) { return new U(); }
+              }
+              public static class U {
+                  public int getPoints() { return 0; }
+                  public void addPoints(int a) {}
+                  public void removePoints(int a) {}
+              }
+          }""",
+
+            "me/TechsCode/UltraEconomy/base/item/XMaterial.java": """
+          package me.TechsCode.UltraEconomy.base.item;
+          import org.bukkit.inventory.ItemStack; import java.util.Optional;
+          public class XMaterial { public Optional<ItemStack> getAsItemStack() { return Optional.empty(); } }""",
+
+            "me/TechsCode/UltraEconomy/objects/CurrencyFormat.java": """
+          package me.TechsCode.UltraEconomy.objects;
+          public class CurrencyFormat {
+              public String getPluralFormat() { return ""; }
+              public String formattedFormat(double a) { return ""; }
+              public String format(double a) { return ""; }
+          }""",
+
+            "me/TechsCode/UltraEconomy/objects/Currency.java": """
+          package me.TechsCode.UltraEconomy.objects;
+          import me.TechsCode.UltraEconomy.base.item.XMaterial;
+          public class Currency {
+              public String getKey() { return ""; }
+              public String getName() { return ""; }
+              public XMaterial getIcon() { return null; }
+              public CurrencyFormat getFormat() { return new CurrencyFormat(); }
+          }""",
+
+            "me/TechsCode/UltraEconomy/objects/Account.java": """
+          package me.TechsCode.UltraEconomy.objects;
+          public class Account {
+              public Bal getBalance(Currency c) { return new Bal(); }
+              public static class Bal {
+                  public double getOnHand() { return 0; }
+                  public void addHand(double a) {}
+                  public void removeHand(double a) {}
+              }
+          }""",
+
+            "me/TechsCode/UltraEconomy/UltraEconomy.java": """
+          package me.TechsCode.UltraEconomy;
+          import me.TechsCode.UltraEconomy.objects.*; import java.util.*; import java.util.stream.Stream;
+          public class UltraEconomy {
+              private static final API api = new API();
+              public static API getAPI() { return api; }
+              public static class API {
+                  public CC getCurrencies() { return new CC(); }
+                  public AC getAccounts() { return new AC(); }
+              }
+              public static class CC {
+                  public Optional<Currency> key(String id) { return Optional.empty(); }
+                  public Stream<Currency> stream() { return Stream.empty(); }
+              }
+              public static class AC {
+                  public Optional<Account> name(String n) { return Optional.empty(); }
+                  public Optional<Account> uuid(UUID uid) { return Optional.empty(); }
+              }
+          }""",
+
+            "io/th0rgal/oraxen/items/ItemBuilder.java": """
+          package io.th0rgal.oraxen.items;
+          import org.bukkit.inventory.ItemStack;
+          public class ItemBuilder { public ItemStack build() { return null; } }""",
+
+            "io/th0rgal/oraxen/api/OraxenItems.java": """
+          package io.th0rgal.oraxen.api;
+          import io.th0rgal.oraxen.items.ItemBuilder; import org.bukkit.inventory.ItemStack;
+          public class OraxenItems {
+              public static ItemBuilder getItemById(String id) { return null; }
+              public static boolean exists(ItemStack i) { return false; }
+              public static boolean exists(String id) { return false; }
+              public static String getIdByItem(ItemStack i) { return null; }
+          }""",
+
+            "com/nexomc/nexo/items/ItemBuilder.java": """
+          package com.nexomc.nexo.items;
+          import org.bukkit.inventory.ItemStack;
+          public class ItemBuilder { public ItemStack build() { return null; } }""",
+
+            "com/nexomc/nexo/api/NexoItems.java": """
+          package com.nexomc.nexo.api;
+          import com.nexomc.nexo.items.ItemBuilder; import org.bukkit.inventory.ItemStack;
+          public class NexoItems {
+              public static ItemBuilder itemFromId(String id) { return null; }
+              public static boolean exists(ItemStack i) { return false; }
+              public static boolean exists(String id) { return false; }
+              public static String idFromItem(ItemStack i) { return null; }
+          }""",
+
+            "com/ssomar/score/api/executableitems/config/ExecutableItemInterface.java": """
+          package com.ssomar.score.api.executableitems.config;
+          import org.bukkit.inventory.ItemStack; import java.util.Optional;
+          public interface ExecutableItemInterface {
+              ItemStack buildItem(int amount, Optional<?> extra);
+              String getId();
+          }""",
+
+            "com/ssomar/score/api/executableitems/ExecutableItemsAPI.java": """
+          package com.ssomar.score.api.executableitems;
+          import com.ssomar.score.api.executableitems.config.ExecutableItemInterface;
+          import org.bukkit.inventory.ItemStack; import java.util.Optional;
+          public class ExecutableItemsAPI {
+              private static final Mgr mgr = new Mgr();
+              public static Mgr getExecutableItemsManager() { return mgr; }
+              public static class Mgr {
+                  public Optional<ExecutableItemInterface> getExecutableItem(String id) { return Optional.empty(); }
+                  public Optional<ExecutableItemInterface> getExecutableItem(ItemStack i) { return Optional.empty(); }
+                  public boolean isValidID(String id) { return false; }
+              }
+          }""",
+
+            "su/nightexpress/excellentcrates/crate/impl/Crate.java": """
+          package su.nightexpress.excellentcrates.crate.impl;
+          import org.bukkit.inventory.ItemStack;
+          public class Crate { public ItemStack getItemStack() { return null; } public String getId() { return ""; } }""",
+
+            "su/nightexpress/excellentcrates/key/CrateKey.java": """
+          package su.nightexpress.excellentcrates.key;
+          import org.bukkit.inventory.ItemStack;
+          public class CrateKey { public ItemStack getItemStack() { return null; } public String getId() { return ""; } }""",
+
+            "su/nightexpress/excellentcrates/CratesAPI.java": """
+          package su.nightexpress.excellentcrates;
+          import su.nightexpress.excellentcrates.crate.impl.Crate;
+          import su.nightexpress.excellentcrates.key.CrateKey;
+          import org.bukkit.inventory.ItemStack;
+          public class CratesAPI {
+              public static boolean isLoaded() { return false; }
+              public static CM getCrateManager() { return new CM(); }
+              public static KM getKeyManager() { return new KM(); }
+              public static class CM {
+                  public boolean isCrate(ItemStack i) { return false; }
+                  public Crate getCrateByItem(ItemStack i) { return null; }
+                  public Crate getCrateById(String id) { return null; }
+              }
+              public static class KM {
+                  public boolean isKey(ItemStack i) { return false; }
+                  public CrateKey getKeyByItem(ItemStack i) { return null; }
+                  public CrateKey getKeyById(String id) { return null; }
+              }
+          }""",
+          }
+
+          for path, source in files.items():
+              full = os.path.join(src, path)
+              os.makedirs(os.path.dirname(full), exist_ok=True)
+              with open(full, "w") as f:
+                  f.write(source.strip())
+          print(f"Wrote {len(files)} stub source files")
+          PYEOF
+
+          # Step 3: Compile stubs against spigot/paper API and nightcore sub-module JARs
+          mkdir -p /tmp/stubs/classes
+          API_JAR=$(find ~/.m2/repository/io/papermc/paper/paper-api/ -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
+          if [ -z "$API_JAR" ]; then
+            API_JAR=$(find ~/.m2/repository/org/spigotmc/spigot-api/ -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | head -1)
+          fi
+          NC_JARS=$(find ~/.m2/repository/su/nightexpress/nightcore/ -name "*.jar" ! -name "*sources*" ! -name "*javadoc*" 2>/dev/null | tr '\n' ':')
+          ANNOTATIONS=$(find ~/.m2/repository/org/jetbrains/annotations/ -name "*.jar" ! -name "*sources*" 2>/dev/null | head -1)
+          STUB_CP="${API_JAR}:${NC_JARS}${ANNOTATIONS}"
+
+          find /tmp/stubs/src -name "*.java" > /tmp/stubs/sources.txt
+          javac -source 21 -target 21 -cp "$STUB_CP" -d /tmp/stubs/classes @/tmp/stubs/sources.txt
+
+          # Step 4: Package into one JAR and install under each artifact coordinate
+          jar cf /tmp/stubs/all-stubs.jar -C /tmp/stubs/classes .
+          for coords in \
+            "me.mraxetv.beasttokens:BeastTokens:3.11.1" \
+            "com.bencodez:votingplugin:6.15.1" \
+            "com.magmaguy.elitemobs:EliteMobs:8.5.4" \
+            "su.nightexpress.coinsengine:CoinsEngine:2.5.0" \
+            "me.TechsCode:UltraEconomyAPI:1.1.2" \
+            "com.nexomc.nexo:Nexo:0.9-dev" \
+            "su.nightexpress.excellentcrates:ExcellentCrates:6.4.1" \
+            "io.th0rgal.oraxen:Oraxen:1.155.1" \
+            "com.ssomar.score:SCore:5.24.12.29"; do
+            IFS=: read -r g a v <<< "$coords"
+            mvn install:install-file -q -Dfile=/tmp/stubs/all-stubs.jar \
+              -DgroupId="$g" -DartifactId="$a" -Dversion="$v" -Dpackaging=jar
+          done
+
+          # Step 5: Build nightcore main module (now all deps are resolvable)
+          mvn -B install -pl main -DskipTests --no-transfer-progress
 
       - name: Build with Maven
         run: mvn -B package --no-transfer-progress
