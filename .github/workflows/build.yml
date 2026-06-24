@@ -80,7 +80,7 @@ jobs:
           package su.nightexpress.coinsengine.api;
           import su.nightexpress.coinsengine.api.currency.Currency;
           import org.bukkit.entity.Player;
-          import java.util.*; public class CoinsEngineAPI {
+          import java.util.UUID; import java.util.Collection; import java.util.Collections; public class CoinsEngineAPI {
               public static Mgr getCurrencyManager() { return new Mgr(); }
               public static Currency getCurrency(String id) { return null; }
               public static double getBalance(Player p, Currency c) { return 0; }
@@ -155,7 +155,7 @@ jobs:
 
             "me/TechsCode/UltraEconomy/UltraEconomy.java": """
           package me.TechsCode.UltraEconomy;
-          import me.TechsCode.UltraEconomy.objects.*; import java.util.*; import java.util.stream.Stream;
+          import me.TechsCode.UltraEconomy.objects.*; import java.util.Optional; import java.util.UUID; import java.util.stream.Stream;
           public class UltraEconomy {
               private static final API api = new API();
               public static API getAPI() { return api; }
